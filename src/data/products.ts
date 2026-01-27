@@ -24,7 +24,6 @@ export interface Category {
   id: string;
   name: string;
   image: string;
-  icon: string;
   subcategories: string[];
 }
 
@@ -33,56 +32,48 @@ export const categories: Category[] = [
     id: "fruits-vegetables",
     name: "Fruits & Vegetables",
     image: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400",
-    icon: "🥬",
     subcategories: ["Fresh Fruits", "Fresh Vegetables", "Organic", "Exotic Fruits"]
   },
   {
     id: "rice-atta",
     name: "Rice & Atta",
     image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400",
-    icon: "🌾",
     subcategories: ["Basmati Rice", "Non-Basmati Rice", "Atta & Flour", "Pulses & Lentils"]
   },
   {
     id: "spices-masala",
     name: "Spices & Masala",
     image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400",
-    icon: "🌶️",
     subcategories: ["Whole Spices", "Ground Spices", "Masala Blends", "Cooking Pastes"]
   },
   {
     id: "snacks-sweets",
     name: "Snacks & Sweets",
     image: kajukatliImg,
-    icon: "🍬",
     subcategories: ["Namkeen", "Biscuits", "Mithai", "Chips & Crisps"]
   },
   {
     id: "dairy-frozen",
     name: "Dairy & Frozen",
     image: "https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=400",
-    icon: "🥛",
     subcategories: ["Paneer & Cheese", "Milk & Cream", "Frozen Parathas", "Ice Cream"]
   },
   {
     id: "beverages",
     name: "Beverages",
     image: tajmahalImg,
-    icon: "🍵",
     subcategories: ["Tea", "Coffee", "Juices", "Soft Drinks"]
   },
   {
     id: "ready-to-eat",
     name: "Ready to Eat",
     image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400",
-    icon: "🍛",
     subcategories: ["Curries", "Rice Dishes", "Instant Mixes", "Pickles & Chutneys"]
   },
   {
     id: "personal-care",
     name: "Personal Care",
     image: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400",
-    icon: "🧴",
     subcategories: ["Hair Care", "Skin Care", "Oral Care", "Ayurvedic"]
   }
 ];

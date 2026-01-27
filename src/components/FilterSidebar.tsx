@@ -87,7 +87,7 @@ export const FilterSidebar = ({
                       : 'hover:bg-muted'
                   }`}
                 >
-                  <span className="text-lg">{category.icon}</span>
+                  {/* <span className="text-lg">{category.icon}</span> */}
                   <span className="text-sm">{category.name}</span>
                 </button>
               ))}

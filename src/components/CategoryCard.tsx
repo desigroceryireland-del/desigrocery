@@ -27,9 +27,9 @@ export const CategoryCard = ({ category, index = 0 }: CategoryCardProps) => {
           </div>
 
           {/* Icon Badge */}
-          <div className="absolute top-4 right-4 w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm flex items-center justify-center text-2xl shadow-lg group-hover:scale-110 transition-transform">
+          {/* <div className="absolute top-4 right-4 w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm flex items-center justify-center text-2xl shadow-lg group-hover:scale-110 transition-transform">
             {category.icon}
-          </div>
+          </div> */}
 
           {/* Content */}
           <div className="absolute bottom-0 left-0 right-0 p-4">
