@@ -110,23 +110,24 @@ const CategoryPage = () => {
   }
 
   return (
-    <Layout>
-      <div className="container py-8">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
-          <Link to="/" className="hover:text-primary">Home</Link>
-          <ChevronRight className="h-4 w-4" />
-          <Link to="/category/all" className="hover:text-primary">Categories</Link>
-          {currentCategory && (
-            <>
-              <ChevronRight className="h-4 w-4" />
-              <span className="text-foreground">{currentCategory.name}</span>
-            </>
-          )}
-        </nav>
+  <Layout>
+    <div className="container py-8">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+        <Link to="/" className="hover:text-primary">Home</Link>
+        <ChevronRight className="h-4 w-4" />
+        <Link to="/category/all" className="hover:text-primary">Categories</Link>
+        {currentCategory && (
+          <>
+            <ChevronRight className="h-4 w-4" />
+            <span className="text-foreground">{currentCategory.name}</span>
+          </>
+        )}
+      </nav>
 
-        <div className="flex gap-8">
-          {/* Filter Sidebar */}
+      <div className="flex gap-8">
+        {/* ✅ Sidebar ONLY on desktop */}
+        <div className="hidden lg:block">
           <FilterSidebar
             selectedCategory={selectedCategory}
             selectedSubcategories={selectedSubcategories}
@@ -140,97 +141,91 @@ const CategoryPage = () => {
             onRatingChange={setMinRating}
             onClearFilters={clearFilters}
           />
+        </div>
 
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">
-                  {currentCategory?.name || 'All Products'}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {filteredProducts.length} products found
-                </p>
-              </div>
-
-              <div className="flex items-center gap-4">
-                {/* Mobile Filter Button is inside FilterSidebar */}
-                <div className="lg:hidden">
-                  <FilterSidebar
-                    selectedCategory={selectedCategory}
-                    selectedSubcategories={selectedSubcategories}
-                    priceRange={priceRange}
-                    offersOnly={offersOnly}
-                    minRating={minRating}
-                    onCategoryChange={setSelectedCategory}
-                    onSubcategoryChange={setSelectedSubcategories}
-                    onPriceChange={setPriceRange}
-                    onOffersChange={setOffersOnly}
-                    onRatingChange={setMinRating}
-                    onClearFilters={clearFilters}
-                  />
-                </div>
-
-                {/* Sort */}
-                <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="popular">Popularity</SelectItem>
-                    <SelectItem value="price-low">Price: Low to High</SelectItem>
-                    <SelectItem value="price-high">Price: High to Low</SelectItem>
-                    <SelectItem value="rating">Rating</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* View Mode */}
-                <div className="hidden sm:flex border rounded-lg overflow-hidden">
-                  <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="icon"
-                    onClick={() => setViewMode('grid')}
-                    className="rounded-none"
-                  >
-                    <Grid3X3 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="icon"
-                    onClick={() => setViewMode('list')}
-                    className="rounded-none"
-                  >
-                    <LayoutList className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+        {/* Main Content */}
+        <div className="flex-1">
+          {/* ✅ Responsive Header */}
+          <div className="flex flex-col gap-4 mb-6">
+            {/* Title */}
+            <div>
+              <h1 className="text-2xl font-bold text-foreground break-words">
+                {currentCategory?.name || 'All Products'}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {filteredProducts.length} products found
+              </p>
             </div>
 
-            {/* Products Grid */}
-            {filteredProducts.length > 0 ? (
-              <div className={`grid gap-4 lg:gap-6 ${
-                viewMode === 'grid' 
-                  ? 'grid-cols-2 md:grid-cols-3' 
-                  : 'grid-cols-1'
-              }`}>
-                {filteredProducts.map((product, index) => (
-                  <ProductCard key={product.id} product={product} index={index} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16">
-                <p className="text-muted-foreground mb-4">No products found matching your criteria.</p>
-                <Button onClick={clearFilters} variant="outline">
-                  Clear Filters
+            {/* Controls Row */}
+            <div className="flex items-center gap-3 overflow-x-auto">
+              {/* ✅ Mobile Filter Button */}
+              <Button variant="outline" className="lg:hidden shrink-0">
+                Filters
+              </Button>
+
+              {/* Sort */}
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                <SelectTrigger className="w-[140px] shrink-0">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="popular">Popularity</SelectItem>
+                  <SelectItem value="price-low">Price ↑</SelectItem>
+                  <SelectItem value="price-high">Price ↓</SelectItem>
+                  <SelectItem value="rating">Rating</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* View Mode (hide on very small screens) */}
+              <div className="hidden sm:flex border rounded-lg overflow-hidden shrink-0">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="icon"
+                  onClick={() => setViewMode('grid')}
+                >
+                  <Grid3X3 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="icon"
+                  onClick={() => setViewMode('list')}
+                >
+                  <LayoutList className="h-4 w-4" />
                 </Button>
               </div>
-            )}
+            </div>
           </div>
+
+          {/* Products Grid */}
+          {filteredProducts.length > 0 ? (
+            <div
+              className={`grid gap-4 lg:gap-6 ${
+                viewMode === 'grid'
+                  ? 'grid-cols-2 md:grid-cols-3'
+                  : 'grid-cols-1'
+              }`}
+            >
+              {filteredProducts.map((product, index) => (
+                <ProductCard key={product.id} product={product} index={index} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground mb-4">
+                No products found matching your criteria.
+              </p>
+              <Button onClick={clearFilters} variant="outline">
+                Clear Filters
+              </Button>
+            </div>
+          )}
         </div>
       </div>
-    </Layout>
-  );
+    </div>
+  </Layout>
+);
+
 };
 
 export default CategoryPage;

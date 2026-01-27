@@ -32,13 +32,28 @@ export const Navbar = () => {
   return (
     <header className="sticky top-0 z-50 bg-card shadow-card">
       {/* Top Bar */}
-      <div className="bg-secondary">
-        <div className="container py-2">
-          <p className="text-center text-sm text-secondary-foreground">
-            🎉 Free delivery on orders over €50! Use code <strong>DESI10</strong> for 10% off
-          </p>
-        </div>
-      </div>
+      <div className="bg-secondary overflow-hidden">
+  <div className="marquee">
+    <div className="marquee-content">
+      <span>🎉 Free delivery on orders over €50!</span>
+      <span>🚚 Same Day Delivery Available</span>
+      <span>🛍️ Click & Collect from Store</span>
+      <span>💸 Use Code <strong>DESI10</strong> for 10% OFF</span>
+      <span>🌶️ Fresh Indian Groceries Delivered Daily</span>
+    </div>
+
+    {/* Duplicate for seamless loop */}
+    <div className="marquee-content">
+      <span>🎉 Free delivery on orders over €50!</span>
+      <span>🚚 Same Day Delivery Available</span>
+      <span>🛍️ Click & Collect from Store</span>
+      <span>💸 Use Code <strong>DESI10</strong> for 10% OFF</span>
+      <span>🌶️ Fresh Indian Groceries Delivered Daily</span>
+    </div>
+  </div>
+</div>
+
+
 
       {/* Main Nav */}
       <div className="container py-4">
