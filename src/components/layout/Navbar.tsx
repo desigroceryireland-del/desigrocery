@@ -48,7 +48,7 @@ export const Navbar = () => {
             <div className="w-10 h-10 rounded-full gradient-saffron flex items-center justify-center text-xl">
               🛒
             </div>
-            <div className="hidden sm:block">
+            <div className="block">
               <h1 className="text-lg font-bold text-foreground leading-tight">Desi Grocery</h1>
               <p className="text-xs text-muted-foreground">Ireland</p>
             </div>
