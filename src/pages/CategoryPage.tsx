@@ -9,6 +9,13 @@ import { CategoryCard } from '@/components/CategoryCard';
 import { FilterSidebar } from '@/components/FilterSidebar';
 import { products, categories } from '@/data/products';
 import { useEffect } from "react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 
 type SortOption = 'popular' | 'price-low' | 'price-high' | 'rating';
@@ -160,9 +167,36 @@ const CategoryPage = () => {
             {/* Controls Row */}
             <div className="flex items-center gap-3 overflow-x-auto">
               {/* ✅ Mobile Filter Button */}
-              <Button variant="outline" className="lg:hidden shrink-0">
-                Filters
-              </Button>
+              <Sheet>
+  <SheetTrigger asChild>
+    <Button variant="outline" className="lg:hidden shrink-0">
+      Filters
+    </Button>
+  </SheetTrigger>
+
+  <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
+    <SheetHeader>
+      <SheetTitle>Filters</SheetTitle>
+    </SheetHeader>
+
+    <div className="mt-4">
+      <FilterSidebar
+        selectedCategory={selectedCategory}
+        selectedSubcategories={selectedSubcategories}
+        priceRange={priceRange}
+        offersOnly={offersOnly}
+        minRating={minRating}
+        onCategoryChange={setSelectedCategory}
+        onSubcategoryChange={setSelectedSubcategories}
+        onPriceChange={setPriceRange}
+        onOffersChange={setOffersOnly}
+        onRatingChange={setMinRating}
+        onClearFilters={clearFilters}
+      />
+    </div>
+  </SheetContent>
+</Sheet>
+
 
               {/* Sort */}
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
