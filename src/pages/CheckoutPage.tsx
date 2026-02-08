@@ -10,6 +10,7 @@ import { Layout } from '@/components/layout/Layout';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { api } from "@/lib/api";
 
 const CheckoutPage = () => {
   const { state, subtotal, total, clearCart } = useCart();
@@ -38,39 +39,58 @@ const CheckoutPage = () => {
     return null;
   }
 
-  const handlePlaceOrder = async () => {
-    if (!selectedAddress) {
-      toast({
-        title: "Select an address",
-        description: "Please select a delivery address to continue.",
-        variant: "destructive",
-      });
-      return;
-    }
+ const handlePlaceOrder = async () => {
+  if (!selectedAddress) {
+    toast({
+      title: "Select an address",
+      description: "Please select a delivery address to continue.",
+      variant: "destructive",
+    });
+    return;
+  }
 
-    if (!paymentDetails.cardNumber || !paymentDetails.expiry || !paymentDetails.cvv || !paymentDetails.name) {
-      toast({
-        title: "Payment details required",
-        description: "Please fill in all payment details.",
-        variant: "destructive",
-      });
-      return;
-    }
+  if (!paymentDetails.cardNumber || !paymentDetails.expiry || !paymentDetails.cvv || !paymentDetails.name) {
+    toast({
+      title: "Payment details required",
+      description: "Please fill in all payment details.",
+      variant: "destructive",
+    });
+    return;
+  }
 
+  try {
     setIsProcessing(true);
 
-    // Simulate order processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // 🧾 Prepare order items
+    const items = state.items.map(item => ({
+      product_id: item.product.id,
+      quantity: item.quantity,
+    }));
+
+    // 📡 Call backend
+    const data = await api.createOrder(items, state.discount);
 
     clearCart();
+
     toast({
       title: "Order placed successfully! 🎉",
-      description: "Your order has been confirmed and will be delivered soon.",
+      description: "Your order has been confirmed.",
     });
-    navigate('/profile');
-    
+
+    // Go to order success page (we will build next)
+    navigate(`/order-success/${data.order_id}`);
+
+  } catch (err) {
+    console.error(err);
+    toast({
+      title: "Order failed",
+      description: "Something went wrong. Please try again.",
+      variant: "destructive",
+    });
+  } finally {
     setIsProcessing(false);
-  };
+  }
+};
 
   const formatCardNumber = (value: string) => {
     const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
@@ -249,7 +269,8 @@ const CheckoutPage = () => {
                       <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                     </div>
                     <span className="text-sm font-medium">
-                      €{(item.product.price * item.quantity).toFixed(2)}
+                      €{(Number(item.product.price) * item.quantity).toFixed(2)}
+
                     </span>
                   </div>
                 ))}
@@ -258,7 +279,7 @@ const CheckoutPage = () => {
               <div className="space-y-3 mb-6 text-sm">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal</span>
-                  <span>€{subtotal.toFixed(2)}</span>
+                  <span>€{Number(subtotal).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Delivery</span>
@@ -275,7 +296,7 @@ const CheckoutPage = () => {
               <div className="border-t pt-4 mb-6">
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span>€{total.toFixed(2)}</span>
+                  <span>€{Number(total).toFixed(2)}</span>
                 </div>
               </div>
 

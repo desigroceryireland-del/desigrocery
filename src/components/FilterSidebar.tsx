@@ -1,26 +1,34 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { categories } from '@/data/products';
+import { useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  subcategories?: { id: number; name: string; slug: string }[];
+}
 
 interface FilterSidebarProps {
+  categories: Category[];
   selectedCategory?: string;
   selectedSubcategories: string[];
   priceRange: [number, number];
   offersOnly: boolean;
   minRating: number;
-  onCategoryChange: (category: string) => void;
+  onCategoryChange: (category?: string) => void;
   onSubcategoryChange: (subcategories: string[]) => void;
   onPriceChange: (range: [number, number]) => void;
-  onOffersChange: (offersOnly: boolean) => void;
+  onOffersChange: (value: boolean) => void;
   onRatingChange: (rating: number) => void;
   onClearFilters: () => void;
 }
 
 export const FilterSidebar = ({
+  categories,
   selectedCategory,
   selectedSubcategories,
   priceRange,
@@ -44,13 +52,13 @@ export const FilterSidebar = ({
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const currentCategory = categories.find(c => c.id === selectedCategory);
+  const currentCategory = categories.find(c => c.slug === selectedCategory);
 
-  const toggleSubcategory = (subcategory: string) => {
-    if (selectedSubcategories.includes(subcategory)) {
-      onSubcategoryChange(selectedSubcategories.filter(s => s !== subcategory));
+  const toggleSubcategory = (slug: string) => {
+    if (selectedSubcategories.includes(slug)) {
+      onSubcategoryChange(selectedSubcategories.filter(s => s !== slug));
     } else {
-      onSubcategoryChange([...selectedSubcategories, subcategory]);
+      onSubcategoryChange([...selectedSubcategories, slug]);
     }
   };
 
@@ -61,34 +69,31 @@ export const FilterSidebar = ({
         {/* Header */}
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-lg">Filters</h3>
-          <Button variant="ghost" size="sm" onClick={onClearFilters} className="text-primary">
+          <Button variant="ghost" size="sm" onClick={onClearFilters}>
             Clear all
           </Button>
         </div>
 
         {/* Categories */}
         <div className="border-b pb-4">
-          <button
-            onClick={() => toggleSection('category')}
-            className="flex items-center justify-between w-full text-left font-medium mb-3"
+          <button 
+            onClick={() => toggleSection("category")} 
+            className="flex justify-between w-full mb-3 font-medium"
           >
-            Category
-            {expandedSections.category ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            Category {expandedSections.category ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
+
           {expandedSections.category && (
             <div className="space-y-2">
               {categories.map(category => (
                 <button
-                  key={category.id}
-                  onClick={() => onCategoryChange(category.id)}
-                  className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                    selectedCategory === category.id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'hover:bg-muted'
+                  key={category.slug}
+                  onClick={() => onCategoryChange(category.slug)}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                    selectedCategory === category.slug ? "bg-primary text-white" : "hover:bg-muted"
                   }`}
                 >
-                  {/* <span className="text-lg">{category.icon}</span> */}
-                  <span className="text-sm">{category.name}</span>
+                  {category.name}
                 </button>
               ))}
             </div>
@@ -96,24 +101,24 @@ export const FilterSidebar = ({
         </div>
 
         {/* Subcategories */}
-        {currentCategory && (
+        {currentCategory?.subcategories && currentCategory.subcategories.length > 0 && (
           <div className="border-b pb-4">
-            <button
-              onClick={() => toggleSection('subcategory')}
-              className="flex items-center justify-between w-full text-left font-medium mb-3"
+            <button 
+              onClick={() => toggleSection("subcategory")} 
+              className="flex justify-between w-full mb-3 font-medium"
             >
-              Subcategory
-              {expandedSections.subcategory ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              Subcategory {expandedSections.subcategory ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
+
             {expandedSections.subcategory && (
               <div className="space-y-2">
                 {currentCategory.subcategories.map(sub => (
-                  <label key={sub} className="flex items-center gap-2 cursor-pointer">
+                  <label key={sub.slug} className="flex items-center gap-2 cursor-pointer hover:text-primary transition-colors">
                     <Checkbox
-                      checked={selectedSubcategories.includes(sub)}
-                      onCheckedChange={() => toggleSubcategory(sub)}
+                      checked={selectedSubcategories.includes(sub.slug)}
+                      onCheckedChange={() => toggleSubcategory(sub.slug)}
                     />
-                    <span className="text-sm">{sub}</span>
+                    <span className="text-sm">{sub.name}</span>
                   </label>
                 ))}
               </div>
@@ -121,26 +126,25 @@ export const FilterSidebar = ({
           </div>
         )}
 
-        {/* Price Range */}
+        {/* Price */}
         <div className="border-b pb-4">
-          <button
-            onClick={() => toggleSection('price')}
-            className="flex items-center justify-between w-full text-left font-medium mb-3"
+          <button 
+            onClick={() => toggleSection("price")} 
+            className="flex justify-between w-full mb-3 font-medium"
           >
-            Price Range
-            {expandedSections.price ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            Price Range {expandedSections.price ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
           {expandedSections.price && (
-            <div className="px-2">
+            <div className="px-2 pt-2 pb-4">
               <Slider
                 value={priceRange}
-                onValueChange={(value) => onPriceChange(value as [number, number])}
+                onValueChange={(v) => onPriceChange(v as [number, number])}
                 min={0}
-                max={50}
+                max={100}
                 step={1}
                 className="mb-4"
               />
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <div className="flex justify-between text-xs text-muted-foreground">
                 <span>€{priceRange[0]}</span>
                 <span>€{priceRange[1]}</span>
               </div>
@@ -149,38 +153,37 @@ export const FilterSidebar = ({
         </div>
 
         {/* Offers */}
-        <div className="border-b pb-4">
-          <div className="flex items-center justify-between">
-            <span className="font-medium">Offers Only</span>
-            <Switch checked={offersOnly} onCheckedChange={onOffersChange} />
-          </div>
+        <div className="flex justify-between items-center border-b pb-4">
+          <span className="font-medium">Offers Only</span>
+          <Switch checked={offersOnly} onCheckedChange={onOffersChange} />
         </div>
 
-        {/* Ratings */}
+        {/* Rating */}
         <div>
-          <button
-            onClick={() => toggleSection('rating')}
-            className="flex items-center justify-between w-full text-left font-medium mb-3"
+          <button 
+            onClick={() => toggleSection("rating")} 
+            className="flex justify-between w-full mb-3 font-medium"
           >
-            Minimum Rating
-            {expandedSections.rating ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            Minimum Rating {expandedSections.rating ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
+
           {expandedSections.rating && (
-            <div className="space-y-2">
+            <div className="space-y-1">
               {[4, 3, 2, 1].map(rating => (
                 <button
                   key={rating}
                   onClick={() => onRatingChange(rating)}
-                  className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                    minRating === rating ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                    minRating === rating ? "bg-primary text-white" : "hover:bg-muted"
                   }`}
                 >
-                  <span className="text-sm">{rating}+ ⭐</span>
+                  {rating}+ ⭐
                 </button>
               ))}
             </div>
           )}
         </div>
+
       </div>
     </aside>
   );

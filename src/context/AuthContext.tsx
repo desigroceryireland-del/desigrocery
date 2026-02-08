@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+
+const API_BASE = "http://127.0.0.1:8000/api";
 
 interface Address {
   id: string;
@@ -22,7 +24,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  phone: string;
+  phone?: string;
   addresses: Address[];
   orders: Order[];
 }
@@ -43,99 +45,111 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const mockUser: User = {
-  id: '1',
-  name: 'Priya Sharma',
-  email: 'priya@example.com',
-  phone: '+353 86 123 4567',
-  addresses: [
-    {
-      id: '1',
-      label: 'Home',
-      street: '123 Grafton Street',
-      city: 'Dublin 2',
-      eircode: 'D02 XY45',
-      isDefault: true,
-    },
-    {
-      id: '2',
-      label: 'Work',
-      street: '456 Dame Street',
-      city: 'Dublin 2',
-      eircode: 'D02 AB12',
-      isDefault: false,
-    },
-  ],
-  orders: [
-    {
-      id: 'ORD-001',
-      date: '2024-01-15',
-      items: [
-        { name: 'Tilda Basmati Rice', quantity: 2, price: 15.99 },
-        { name: 'MDH Garam Masala', quantity: 1, price: 4.99 },
-      ],
-      total: 36.97,
-      status: 'delivered',
-      rated: false,
-    },
-    {
-      id: 'ORD-002',
-      date: '2024-01-20',
-      items: [
-        { name: 'Fresh Paneer', quantity: 2, price: 5.99 },
-        { name: 'Kaju Katli', quantity: 1, price: 12.99 },
-      ],
-      total: 24.97,
-      status: 'shipped',
-      rated: false,
-    },
-  ],
-};
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
   });
 
+  // 🔄 Restore login on page refresh
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    const email = localStorage.getItem("userEmail");
+
+    if (token && email) {
+      setAuthState({
+        user: {
+          id: "1",
+          name: "User",
+          email,
+          addresses: [],
+          orders: [],
+        },
+        isAuthenticated: true,
+      });
+    }
+  }, []);
+
+  // 🔐 LOGIN
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Mock login - in real app, this would call an API
-    if (email && password) {
+    try {
+      const res = await fetch(`${API_BASE}/auth/login/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: email, // Django uses username field
+          password,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) return false;
+
+      localStorage.setItem("access", data.access);
+localStorage.setItem("refresh", data.refresh);
+
+      localStorage.setItem("userEmail", email);
+
       setAuthState({
-        user: { ...mockUser, email },
+        user: {
+          id: "1",
+          name: "User",
+          email,
+          addresses: [],
+          orders: [],
+        },
         isAuthenticated: true,
       });
+
       return true;
+    } catch {
+      return false;
     }
-    return false;
   };
 
+  // 📝 SIGNUP
   const signup = async (name: string, email: string, password: string): Promise<boolean> => {
-    // Mock signup
-    if (name && email && password) {
-      setAuthState({
-        user: { ...mockUser, name, email, addresses: [], orders: [] },
-        isAuthenticated: true,
+    try {
+      const res = await fetch(`${API_BASE}/auth/register/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          first_name: name,
+          email,
+          password,
+        }),
       });
-      return true;
+
+      if (!res.ok) return false;
+
+      return await login(email, password);
+    } catch {
+      return false;
     }
-    return false;
   };
 
+  // 🚪 LOGOUT
   const logout = () => {
+    const token = localStorage.getItem("access");
+
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("userEmail");
+
     setAuthState({
       user: null,
       isAuthenticated: false,
     });
   };
 
+  // 📍 ADDRESS MANAGEMENT (Frontend Only for now)
   const addAddress = (address: Omit<Address, 'id'>) => {
     if (!authState.user) return;
+
     const newAddress = { ...address, id: Date.now().toString() };
     const updatedAddresses = address.isDefault
       ? authState.user.addresses.map(a => ({ ...a, isDefault: false })).concat(newAddress)
       : [...authState.user.addresses, newAddress];
-    
+
     setAuthState({
       ...authState,
       user: { ...authState.user, addresses: updatedAddresses },
@@ -144,6 +158,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const removeAddress = (id: string) => {
     if (!authState.user) return;
+
     setAuthState({
       ...authState,
       user: {
@@ -155,6 +170,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const setDefaultAddress = (id: string) => {
     if (!authState.user) return;
+
     setAuthState({
       ...authState,
       user: {
@@ -186,8 +202,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };

@@ -1,5 +1,16 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { Product } from '@/data/products';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useReducer,
+  ReactNode,
+} from "react";
+import { Product } from "@/data/products";
+import { applyPromoCode } from "@/lib/promocode";
+
+import { api } from "@/lib/api";
+
+/* ---------------- TYPES ---------------- */
 
 interface CartItem {
   product: Product;
@@ -9,143 +20,167 @@ interface CartItem {
 interface CartState {
   items: CartItem[];
   promoCode: string | null;
-  discount: number;
+  discountAmount: number; // backend calculated
 }
 
-type CartAction =
-  | { type: 'ADD_ITEM'; product: Product }
-  | { type: 'REMOVE_ITEM'; productId: string }
-  | { type: 'UPDATE_QUANTITY'; productId: string; quantity: number }
-  | { type: 'APPLY_PROMO'; code: string; discount: number }
-  | { type: 'CLEAR_CART' };
 
-const CartContext = createContext<{
-  state: CartState;
-  dispatch: React.Dispatch<CartAction>;
-  addToCart: (product: Product) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  applyPromo: (code: string) => boolean;
-  clearCart: () => void;
-  totalItems: number;
-  subtotal: number;
-  total: number;
-} | null>(null);
+type CartAction =
+  | { type: "SET_CART"; items: CartItem[] }
+  | { type: "APPLY_PROMO"; code: string; discountAmount: number }
+  | { type: "CLEAR_CART" };
+
+
+/* ---------------- CONTEXT ---------------- */
+
+const CartContext = createContext<any>(null);
+
+/* ---------------- REDUCER ---------------- */
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
-    case 'ADD_ITEM': {
-      const existingItem = state.items.find(item => item.product.id === action.product.id);
-      if (existingItem) {
-        return {
-          ...state,
-          items: state.items.map(item =>
-            item.product.id === action.product.id
-              ? { ...item, quantity: item.quantity + 1 }
-              : item
-          ),
-        };
-      }
-      return {
-        ...state,
-        items: [...state.items, { product: action.product, quantity: 1 }],
-      };
-    }
-    case 'REMOVE_ITEM':
-      return {
-        ...state,
-        items: state.items.filter(item => item.product.id !== action.productId),
-      };
-    case 'UPDATE_QUANTITY':
-      if (action.quantity <= 0) {
-        return {
-          ...state,
-          items: state.items.filter(item => item.product.id !== action.productId),
-        };
-      }
-      return {
-        ...state,
-        items: state.items.map(item =>
-          item.product.id === action.productId
-            ? { ...item, quantity: action.quantity }
-            : item
-        ),
-      };
-    case 'APPLY_PROMO':
-      return {
-        ...state,
-        promoCode: action.code,
-        discount: action.discount,
-      };
-    case 'CLEAR_CART':
-      return {
-        items: [],
-        promoCode: null,
-        discount: 0,
-      };
+    case "SET_CART":
+      return { ...state, items: action.items };
+
+    case "APPLY_PROMO":
+  return {
+    ...state,
+    promoCode: action.code,
+    discountAmount: action.discountAmount,
+  };
+;
+
+    case "CLEAR_CART":
+      return { items: [], promoCode: null, discountAmount: 0 };
+
     default:
       return state;
   }
 };
 
-const promoCodes: Record<string, number> = {
-  'DESI10': 10,
-  'FRESH20': 20,
-  'WELCOME15': 15,
-};
+/* ---------------- PROMOS ---------------- */
+
+// const promoCodes: Record<string, number> = {
+//   DESI10: 10,
+//   FRESH20: 20,
+//   WELCOME15: 15,
+// };
+
+/* ---------------- PROVIDER ---------------- */
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(cartReducer, {
     items: [],
     promoCode: null,
-    discount: 0,
+    discountAmount: 0,
   });
 
-  const addToCart = (product: Product) => {
-    dispatch({ type: 'ADD_ITEM', product });
-  };
+  // rest of your code...
 
-  const removeFromCart = (productId: string) => {
-    dispatch({ type: 'REMOVE_ITEM', productId });
-  };
 
-  const updateQuantity = (productId: string, quantity: number) => {
-    dispatch({ type: 'UPDATE_QUANTITY', productId, quantity });
-  };
 
-  const applyPromo = (code: string): boolean => {
-    const discount = promoCodes[code.toUpperCase()];
-    if (discount) {
-      dispatch({ type: 'APPLY_PROMO', code: code.toUpperCase(), discount });
-      return true;
+  /* ✅ LOAD CART FROM BACKEND */
+  const loadCart = async () => {
+    try {
+      const data = await api.getCart();
+
+      const items: CartItem[] = data.items.map((item: any) => ({
+        product: {
+          ...item.product,
+          id: Number(item.product.id),
+          price: Number(item.product.price),
+          original_price: item.product.original_price
+            ? Number(item.product.original_price)
+            : undefined,
+        },
+        quantity: item.quantity,
+      }));
+
+      dispatch({ type: "SET_CART", items });
+    } catch (err) {
+      console.error("Failed to load cart", err);
     }
+  };
+
+  useEffect(() => {
+    loadCart();
+  }, []);
+
+  /* ➕ ADD */
+  const addToCart = async (product: Product) => {
+    await api.addToCart(product.id, 1);
+    await loadCart();
+  };
+
+  /* ➖ REMOVE */
+  const removeFromCart = async (productId: number) => {
+    await api.removeCartItem(productId);
+    await loadCart();
+  };
+
+  /* 🔄 UPDATE */
+  const updateQuantity = async (productId: number, quantity: number) => {
+    await api.updateCartItem(productId, quantity);
+    await loadCart();
+  };
+
+  /* 🎟 PROMO */
+  // const applyPromo = (code: string): boolean => {
+  //   const discount = promoCodes[code.toUpperCase()];
+  //   if (discount) {
+  //     dispatch({
+  //       type: "APPLY_PROMO",
+  //       code: code.toUpperCase(),
+  //       discount,
+  //     });
+  //     return true;
+  //   }
+  //   return false;
+  // };
+  const applyPromo = async (code: string): Promise<boolean> => {
+  try {
+    const data = await applyPromoCode(code, subtotal);
+
+    dispatch({
+      type: "APPLY_PROMO",
+      code: data.code,
+      discountAmount: Number(data.discount_amount),
+    });
+
+    return true;
+  } catch (error) {
     return false;
+  }
+};
+
+
+  /* 🗑 CLEAR */
+  const clearCart = async () => {
+    await api.clearCart();
+    dispatch({ type: "CLEAR_CART" });
   };
 
-  const clearCart = () => {
-    dispatch({ type: 'CLEAR_CART' });
-  };
-
-  const totalItems = state.items.reduce((sum, item) => sum + item.quantity, 0);
+  /* 💰 TOTALS (SAFE) */
   const subtotal = state.items.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
     0
   );
-  const total = subtotal - (subtotal * state.discount) / 100;
+
+  const total = Math.max(0, subtotal - state.discountAmount);
+
+  const totalItems = state.items.reduce((s, i) => s + i.quantity, 0);
 
   return (
     <CartContext.Provider
       value={{
         state,
-        dispatch,
         addToCart,
         removeFromCart,
         updateQuantity,
         applyPromo,
         clearCart,
-        totalItems,
         subtotal,
         total,
+        totalItems,
       }}
     >
       {children}
@@ -153,10 +188,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+/* ---------------- HOOK ---------------- */
+
 export const useCart = () => {
-  const context = useContext(CartContext);
-  if (!context) {
-    throw new Error('useCart must be used within a CartProvider');
-  }
-  return context;
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error("useCart must be used within CartProvider");
+  return ctx;
 };

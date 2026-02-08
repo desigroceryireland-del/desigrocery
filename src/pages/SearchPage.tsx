@@ -1,26 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard } from '@/components/ProductCard';
-import { products } from '@/data/products';
+import { Product } from '@/data/products';
 
 const SearchPage = () => {
   const [searchParams] = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
+
   const [query, setQuery] = useState(initialQuery);
+  const [results, setResults] = useState<Product[]>([]);
+  const [recommended, setRecommended] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const searchResults = query.length > 0
-    ? products.filter(p =>
-        p.name.toLowerCase().includes(query.toLowerCase()) ||
-        p.category.toLowerCase().includes(query.toLowerCase()) ||
-        p.subcategory.toLowerCase().includes(query.toLowerCase()) ||
-        p.description.toLowerCase().includes(query.toLowerCase())
-      )
-    : [];
+  // Fetch search results
+  useEffect(() => {
+    if (query.length === 0) return;
 
-  const recommendedProducts = products.filter(p => p.in_offer).slice(0, 4);
+    setLoading(true);
+
+    fetch(`http://127.0.0.1:8000/api/store/products/?search=${query}`)
+      .then(res => res.json())
+      .then(data => {
+        setResults(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Search error:", err);
+        setLoading(false);
+      });
+  }, [query]);
+
+  // Fetch recommended (offers)
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/api/store/products/")
+      .then(res => res.json())
+      .then(data => setRecommended(data.filter((p: Product) => p.in_offer).slice(0, 4)))
+      .catch(err => console.error("Error fetching recommended:", err));
+  }, []);
 
   return (
     <Layout>
@@ -48,27 +67,31 @@ const SearchPage = () => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-foreground">
-                {searchResults.length > 0
-                  ? `${searchResults.length} results for "${query}"`
-                  : `No results for "${query}"`}
+                {loading
+                  ? "Searching..."
+                  : results.length > 0
+                    ? `${results.length} results for "${query}"`
+                    : `No results for "${query}"`}
               </h2>
             </div>
 
-            {searchResults.length > 0 ? (
+            {!loading && results.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-                {searchResults.map((product, index) => (
+                {results.map((product, index) => (
                   <ProductCard key={product.id} product={product} index={index} />
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">
-                  Try searching for something else or browse our categories.
-                </p>
-                <Link to="/category/all">
-                  <span className="text-primary hover:underline">Browse all categories</span>
-                </Link>
-              </div>
+              !loading && (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground mb-4">
+                    Try searching for something else or browse our categories.
+                  </p>
+                  <Link to="/category/all">
+                    <span className="text-primary hover:underline">Browse all categories</span>
+                  </Link>
+                </div>
+              )
             )}
           </div>
         ) : (
@@ -77,7 +100,7 @@ const SearchPage = () => {
               Recommended for You
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
-              {recommendedProducts.map((product, index) => (
+              {recommended.map((product, index) => (
                 <ProductCard key={product.id} product={product} index={index} />
               ))}
             </div>

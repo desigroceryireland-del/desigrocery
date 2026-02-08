@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Truck, Store, Clock, Shield } from 'lucide-react';
@@ -5,10 +6,32 @@ import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/layout/Layout';
 import { ProductCard } from '@/components/ProductCard';
 import { CategoryCard } from '@/components/CategoryCard';
-import { products, categories } from '@/data/products';
+import { Product, Category } from '@/data/products';
 
 const Index = () => {
-  const offerProducts = products.filter(p => p.in_offer);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch data from backend
+  useEffect(() => {
+    Promise.all([
+      fetch("http://127.0.0.1:8000/api/store/categories/").then(res => res.json()),
+      fetch("http://127.0.0.1:8000/api/store/products/").then(res => res.json())
+    ])
+      .then(([catData, prodData]) => {
+        setCategories(catData);
+        setProducts(prodData);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Homepage load error:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  const offerProducts = products.filter(p => p.in_offer).slice(0, 8);
+  const popularProducts = products.slice(0, 8);
 
   return (
     <Layout>
@@ -49,29 +72,13 @@ const Index = () => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative"
+              className="relative hidden lg:block"
             >
               <div className="grid grid-cols-2 gap-4">
-                <img
-                  src="https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400"
-                  alt="Spices"
-                  className="rounded-2xl shadow-lg w-full h-48 object-cover"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400"
-                  alt="Fresh fruits"
-                  className="rounded-2xl shadow-lg w-full h-48 object-cover mt-8"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400"
-                  alt="Rice"
-                  className="rounded-2xl shadow-lg w-full h-48 object-cover"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400"
-                  alt="Indian food"
-                  className="rounded-2xl shadow-lg w-full h-48 object-cover mt-8"
-                />
+                <img src="https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400" alt="Spices" className="rounded-2xl shadow-lg w-full h-48 object-cover" />
+                <img src="https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400" alt="Fruits" className="rounded-2xl shadow-lg w-full h-48 object-cover mt-8" />
+                <img src="https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400" alt="Rice" className="rounded-2xl shadow-lg w-full h-48 object-cover" />
+                <img src="https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400" alt="Food" className="rounded-2xl shadow-lg w-full h-48 object-cover mt-8" />
               </div>
             </motion.div>
           </div>
@@ -105,26 +112,19 @@ const Index = () => {
             </div>
             <Link to="/offers">
               <Button variant="outline" className="hidden sm:flex gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground">
-                View All Offers
-                <ArrowRight className="h-4 w-4" />
+                View All Offers <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-            {offerProducts.slice(0, 8).map((product, index) => (
+            {offerProducts.map((product, index) => (
               <ProductCard key={product.id} product={product} index={index} />
             ))}
           </div>
-          <Link to="/offers" className="sm:hidden mt-6 block">
-            <Button variant="outline" className="w-full gap-2 border-primary text-primary">
-              View All Offers
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
         </div>
       </section>
 
-      {/* Delivery Info Section */}
+      {/* Why Choose Us Section */}
       <section className="py-16 bg-secondary">
         <div className="container">
           <div className="text-center mb-12">
@@ -135,26 +135,10 @@ const Index = () => {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              {
-                icon: Truck,
-                title: 'Home Delivery',
-                description: 'Free delivery on orders over €50 across Ireland',
-              },
-              {
-                icon: Store,
-                title: 'Store Pickup',
-                description: 'Order online and collect from your nearest store',
-              },
-              {
-                icon: Clock,
-                title: 'Same Day Delivery',
-                description: 'Order before 2pm for same-day delivery in Dublin',
-              },
-              {
-                icon: Shield,
-                title: 'Fresh Guarantee',
-                description: '100% fresh produce or your money back',
-              },
+              { icon: Truck, title: 'Home Delivery', description: 'Free delivery on orders over €50 across Ireland' },
+              { icon: Store, title: 'Store Pickup', description: 'Order online and collect from your nearest store' },
+              { icon: Clock, title: 'Same Day Delivery', description: 'Order before 2pm for same-day delivery in Dublin' },
+              { icon: Shield, title: 'Fresh Guarantee', description: '100% fresh produce or your money back' },
             ].map((feature, index) => (
               <motion.div
                 key={feature.title}
@@ -183,15 +167,9 @@ const Index = () => {
               <h2 className="text-3xl font-bold text-foreground mb-2">Popular Products</h2>
               <p className="text-muted-foreground">Customer favorites you'll love</p>
             </div>
-            <Link to="/category/all">
-              <Button variant="outline" className="hidden sm:flex gap-2">
-                View All
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-            {products.slice(0, 8).map((product, index) => (
+            {popularProducts.map((product, index) => (
               <ProductCard key={product.id} product={product} index={index} />
             ))}
           </div>
