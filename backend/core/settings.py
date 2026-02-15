@@ -161,3 +161,9 @@ SIMPLE_JWT = {
 }
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+STRIPE_PUBLIC_KEY = "pk_test"
+STRIPE_SECRET_KEY = "sk_test"
+STRIPE_WEBHOOK_SECRET = "whsec_..."  # Get this from Stripe Dashboard > Webhooks
+
+FRONTEND_URL = "http://localhost:8080"  # Where to redirect after payment

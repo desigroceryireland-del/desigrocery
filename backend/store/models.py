@@ -57,24 +57,91 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name} x {self.quantity}"
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 
+# class Order(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE)
+#     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+#     discount = models.PositiveIntegerField(default=0)
+#     final_amount = models.DecimalField(max_digits=10, decimal_places=2)
+#     created_at = models.DateTimeField(auto_now_add=True)
+
+#     def __str__(self):
+#         return f"Order #{self.id} - {self.user.username}"
+
+
+# class OrderItem(models.Model):
+#     order = models.ForeignKey(Order, related_name="items", on_delete=models.CASCADE)
+#     product = models.ForeignKey("Product", on_delete=models.CASCADE)
+#     quantity = models.PositiveIntegerField()
+#     price = models.DecimalField(max_digits=10, decimal_places=2)  # price at time of order
+
+#     def __str__(self):
+#         return f"{self.product.name} x {self.quantity}"
+
+from django.db import models
+from django.conf import settings
+from .models import Product  # Import your existing Product model
+
+# ✅ ADDRESS MODEL
+class Address(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="addresses")
+    name = models.CharField(max_length=255)
+    phone = models.CharField(max_length=50)
+    street = models.TextField()
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    zip_code = models.CharField(max_length=20)
+    country = models.CharField(max_length=100, default="India")
+    is_default = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.name} - {self.city}"
+
+# ✅ ORDER MODEL
 class Order(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    discount = models.PositiveIntegerField(default=0)
-    final_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('shipped', 'Shipped'),
+        ('delivered', 'Delivered'),
+        ('cancelled', 'Cancelled'),
+    )
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="orders", null=True, blank=True)
+    
+    # Address snapshot (in case user changes address later)
+    full_name = models.CharField(max_length=255)
+    email = models.EmailField()
+    phone = models.CharField(max_length=50)
+    address_line = models.TextField()
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    zip_code = models.CharField(max_length=20)
+
+    # Payment Info
+    stripe_session_id = models.CharField(max_length=255, blank=True, null=True)
+    payment_status = models.CharField(max_length=50, default="pending")  # pending, paid, failed
+    amount_total = models.DecimalField(max_digits=10, decimal_places=2)
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Order #{self.id} - {self.user.username}"
+        return f"Order #{self.id} - {self.status}"
 
-
+# ✅ ORDER ITEM MODEL
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, related_name="items", on_delete=models.CASCADE)
-    product = models.ForeignKey("Product", on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)  # price at time of order
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    price = models.DecimalField(max_digits=10, decimal_places=2)  # Price at time of purchase
+    quantity = models.PositiveIntegerField(default=1)
+
+    def get_total(self):
+        price = self.price if self.price is not None else 0
+        quantity = self.quantity if self.quantity is not None else 0
+        return price * quantity
+        
 
     def __str__(self):
-        return f"{self.product.name} x {self.quantity}"
+        return f"{self.quantity} x {self.product.name}"

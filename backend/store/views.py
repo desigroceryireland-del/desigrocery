@@ -4,6 +4,172 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from decimal import Decimal
+import stripe
+from django.conf import settings
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework import viewsets, status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from rest_framework import viewsets, permissions
+from .models import Address
+from .serializers import AddressSerializer
+import logging
+from django.db import transaction
+
+from .models import Order, OrderItem, Product, Cart, CartItem
+from .serializers import OrderSerializer
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
+# ✅ 1. CREATE STRIPE CHECKOUT SESSION
+@api_view(['POST'])
+def create_checkout_session(request):
+    """
+    Expects payload:
+    {
+        "items": [{ "id": 1, "quantity": 2 }],
+        "address": { ... } // Optional if you want to save address
+    }
+    """
+    try:
+        data = request.data
+        user = request.user if request.user.is_authenticated else None
+        
+        # Calculate Line Items for Stripe
+        line_items = []
+        total_amount = 0
+        order_items_data = []
+
+        for item in data.get('items', []):
+            product = Product.objects.get(id=item['product']['id'])
+            quantity = item['quantity']
+            price = product.price # Use current price
+
+            line_items.append({
+                'price_data': {
+                    'currency': 'eur', # or 'inr', 'usd'
+                    'product_data': {
+                        'name': product.name,
+                        'images': [request.build_absolute_uri(product.image.url)] if product.image else [],
+                    },
+                    'unit_amount': int(price * 100), # Stripe expects cents
+                },
+                'quantity': quantity,
+            })
+
+            total_amount += price * quantity
+            order_items_data.append({"product": product, "quantity": quantity, "price": price})
+
+        # Create Pending Order in DB
+        order = Order.objects.create(
+            user=user,
+            full_name=data.get('address', {}).get('name', 'Guest'),
+            email=data.get('email', user.email if user else 'guest@example.com'),
+            phone=data.get('address', {}).get('phone', ''),
+            address_line=data.get('address', {}).get('street', ''),
+            city=data.get('address', {}).get('city', ''),
+            state=data.get('address', {}).get('state', ''),
+            zip_code=data.get('address', {}).get('zip_code', ''),
+            amount_total=total_amount,
+            payment_status='pending'
+        )
+
+        for item_data in order_items_data:
+            OrderItem.objects.create(
+                order=order,
+                product=item_data['product'],
+                price=item_data['price'],
+                quantity=item_data['quantity']
+            )
+
+        # Create Stripe Session
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=line_items,
+            mode='payment',
+            success_url=f"{settings.FRONTEND_URL}/payment/success?session_id={{CHECKOUT_SESSION_ID}}&order_id={order.id}",
+            cancel_url=f"{settings.FRONTEND_URL}/payment/cancel",
+            metadata={
+                "order_id": order.id
+            }
+        )
+        
+        # Save session ID to order
+        order.stripe_session_id = checkout_session.id
+        order.save()
+
+        return Response({'url': checkout_session.url})
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=400)
+
+
+# ✅ 2. STRIPE WEBHOOK (Marks order as paid)
+logger = logging.getLogger(__name__)
+
+@csrf_exempt
+def stripe_webhook(request):
+    payload = request.body
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+    event = None
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError as e:
+        # Invalid payload
+        logger.error("Invalid Payload")
+        return HttpResponse(status=400)
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
+        logger.error("Invalid Signature")
+        return HttpResponse(status=400)
+
+    # Handle the event
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        
+        # ✅ FIX: Handle case where metadata might be missing
+        order_id = session.get('metadata', {}).get('order_id')
+        
+        if not order_id:
+            logger.error("No order_id found in session metadata")
+            return HttpResponse(status=400)
+
+        try:
+            with transaction.atomic():
+                order = Order.objects.get(id=order_id)
+                
+                # ✅ Check if already paid to avoid double processing
+                if order.payment_status == 'paid':
+                    return HttpResponse(status=200)
+
+                order.payment_status = 'paid'
+                order.status = 'processing'
+                order.save()
+                
+                # ✅ Clear Cart
+                if order.user:
+                    CartItem.objects.filter(cart__user=order.user).delete() # Safer delete
+                    
+                logger.info(f"Order {order_id} marked as paid.")
+
+        except Order.DoesNotExist:
+            logger.error(f"Order {order_id} not found.")
+            return HttpResponse(status=404)
+
+    return HttpResponse(status=200)
+
+# ✅ 3. USER ORDERS VIEWSET
+class OrderViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrderSerializer
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).order_by('-created_at')
 
 from .models import (
     Category,
@@ -128,41 +294,12 @@ def clear_cart(request):
     cart.items.all().delete()
     return Response({"message": "Cart cleared"})
 
+class AddressViewSet(viewsets.ModelViewSet):
+    serializer_class = AddressSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-# =========================
-# ORDER (NO PROMO LOGIC)
-# =========================
+    def get_queryset(self):
+        return Address.objects.filter(user=self.request.user)
 
-class CreateOrderView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        items = request.data.get("items", [])
-        total = Decimal("0.00")
-
-        order = Order.objects.create(
-            user=request.user,
-            total_amount=Decimal("0.00"),
-        )
-
-        for item in items:
-            product = Product.objects.get(id=item["product_id"])
-            quantity = int(item["quantity"])
-            price = product.price
-
-            OrderItem.objects.create(
-                order=order,
-                product=product,
-                quantity=quantity,
-                price=price,
-            )
-
-            total += price * quantity
-
-        order.total_amount = total
-        order.save()
-
-        return Response({
-            "order_id": order.id,
-            "total_amount": str(total),
-        })
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

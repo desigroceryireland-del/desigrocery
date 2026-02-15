@@ -15,9 +15,13 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ["id", "name", "slug", "image", "subcategories"]
 
 
+from rest_framework import serializers
+from .models import Product, Category, SubCategory
+
 class ProductSerializer(serializers.ModelSerializer):
     category = serializers.StringRelatedField()
     subcategory = serializers.StringRelatedField()
+    image = serializers.SerializerMethodField()  # ✅ Custom method for full URL
 
     class Meta:
         model = Product
@@ -37,6 +41,16 @@ class ProductSerializer(serializers.ModelSerializer):
             "category",
             "subcategory",
         ]
+
+    def get_image(self, obj):
+        request = self.context.get('request')
+        if obj.image:
+            # ✅ Return full absolute URL (e.g. http://127.0.0.1:8000/media/...)
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return f"http://127.0.0.1:8000{obj.image.url}" # Fallback
+        return None
+
 from .models import Cart, CartItem
 
 class CartItemSerializer(serializers.ModelSerializer):
@@ -62,20 +76,35 @@ class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
         fields = ["id", "items"]
+# serializers.py
 from rest_framework import serializers
-from .models import Order, OrderItem
+from .models import Address, Order, OrderItem
+
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ['id', 'name', 'phone', 'street', 'city', 'state', 'zip_code', 'is_default']
+        read_only_fields = ['id']
+
+    def validate(self, attrs):
+        # Limit to 3 addresses per user
+        user = self.context['request'].user
+        if self.instance is None:  # Creation
+            if user.addresses.count() >= 3:
+                raise serializers.ValidationError("You can only add up to 3 addresses.")
+        return attrs
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source="product.name", read_only=True)
-
+    product_name = serializers.CharField(source='product.name')
+    
     class Meta:
         model = OrderItem
-        fields = ["product", "product_name", "quantity", "price"]
-
+        fields = ['product_name', 'quantity', 'price']
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
-
+    #total_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    amount_total = serializers.DecimalField(max_digits=10, decimal_places=2) 
     class Meta:
         model = Order
-        fields = ["id", "total_amount", "discount", "final_amount", "created_at", "items"]
+        fields = ['id', 'status', 'created_at', 'amount_total', 'items']
