@@ -365,37 +365,33 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [isAuthenticated]);
 
   /* ➕ ADD */
-  const addToCart = async (product: Product) => {
-    // ✅ Redirect if not logged in
-    if (!isAuthenticated) {
-      toast({
-        title: "Login Required",
-        description: "Please log in to add items to your cart.",
-        variant: "destructive",
-      });
-      // Store current location or redirect to cart after login
-      navigate("/login?redirect=/cart");
-      return;
-    }
+ /* ➕ ADD IN CartContext.tsx */
+const addToCart = async (product: Product) => {
+  if (!isAuthenticated) {
+    toast({ title: "Login Required", variant: "destructive" });
+    navigate("/login?redirect=/cart");
+    return;
+  }
 
-    try {
-      setError(null);
-      await api.addToCart(product.id, 1);
-      toast({
-        title: "Added to cart",
-        description: `${product.name} has been added to your cart.`,
-      });
-      await loadCart();
-    } catch (err) {
-      console.error("Failed to add to cart:", err);
-      setError("Failed to add item to cart.");
-      toast({
-        title: "Error",
-        description: "Could not add item to cart.",
-        variant: "destructive",
-      });
-    }
-  };
+  try {
+    setError(null);
+    
+    // ✅ 1. Get location from URL
+    const params = new URLSearchParams(window.location.search);
+    const locationId = params.get('location');
+
+    // ✅ 2. Send locationId to backend so it doesn't crash calculating price
+    await api.addToCart(product.id, 1, locationId || undefined);
+    
+    toast({ title: "Added to cart", description: `${product.name} added.` });
+    
+    // ✅ 3. Refresh cart data
+    await loadCart();
+  } catch (err) {
+    console.error("Add to cart error:", err);
+    toast({ title: "Error", description: "Failed to add item.", variant: "destructive" });
+  }
+};
 
   /* ➖ REMOVE */
   const removeFromCart = async (productId: number) => {

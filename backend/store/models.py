@@ -1,4 +1,6 @@
 from django.db import models
+import uuid # Add this import at the top
+import datetime
 class Category(models.Model):
     name = models.CharField(max_length=150)
     slug = models.SlugField(unique=True)
@@ -99,6 +101,9 @@ class Address(models.Model):
         return f"{self.name} - {self.city}"
 
 # ✅ ORDER MODEL
+import uuid # Add this import at the top
+import datetime
+
 class Order(models.Model):
     STATUS_CHOICES = (
         ('pending', 'Pending'),
@@ -110,7 +115,10 @@ class Order(models.Model):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="orders", null=True, blank=True)
     
-    # Address snapshot (in case user changes address later)
+    # ✅ Professional Order Number Field
+    order_number = models.CharField(max_length=100, unique=True, editable=False, null=True, blank=True)
+    
+    # Address snapshot
     full_name = models.CharField(max_length=255)
     email = models.EmailField()
     phone = models.CharField(max_length=50)
@@ -121,14 +129,24 @@ class Order(models.Model):
 
     # Payment Info
     stripe_session_id = models.CharField(max_length=255, blank=True, null=True)
-    payment_status = models.CharField(max_length=50, default="pending")  # pending, paid, failed
+    payment_status = models.CharField(max_length=50, default="pending")
     amount_total = models.DecimalField(max_digits=10, decimal_places=2)
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # ✅ Logic to generate matching Order ID
+    def save(self, *args, **kwargs):
+        if not self.order_number:
+            # Generates something like: DG-2026-A1B2
+            date_str = datetime.date.today().strftime("%Y")
+            unique_id = str(uuid.uuid4()).split('-')[0].upper()
+            self.order_number = f"DG-{date_str}-{unique_id}"
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"Order #{self.id} - {self.status}"
+        # Now matches the professional number
+        return f"Order {self.order_number} - {self.status}"
 
 # ✅ ORDER ITEM MODEL
 class OrderItem(models.Model):
@@ -145,3 +163,53 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name}"
+class Location(models.Model):
+    name = models.CharField(max_length=150, unique=True)
+    slug = models.SlugField(unique=True)
+    address = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+class ProductPrice(models.Model):
+    # Links a product to a specific location
+    product = models.ForeignKey('Product', on_delete=models.CASCADE, related_name="location_prices")
+    location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="product_prices")
+    
+    # These fields are now location-specific
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    original_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    stock_count = models.PositiveIntegerField(default=0)
+    in_stock = models.BooleanField(default=True)
+
+    class Meta:
+        # This prevents having two different prices for the same product in the same city
+        unique_together = ("product", "location")
+
+    def __str__(self):
+        return f"{self.product.name} in {self.location.name}"
+
+
+class MiscellaneousCharge(models.Model):
+    CHARGE_CHOICES = [
+        ('percentage', 'Percentage'),
+        ('fixed', 'Fixed Amount'),
+    ]
+
+    name = models.CharField(max_length=100)
+    charge_type = models.CharField(max_length=20, choices=CHARGE_CHOICES, default='fixed')
+    value = models.DecimalField(max_digits=10, decimal_places=2)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.value})"
+
+    # ✅ ENSURE THIS IS INSIDE THE CLASS
+    def calculate_charge(self, subtotal):
+        from decimal import Decimal
+        subtotal = Decimal(str(subtotal))
+        value = Decimal(str(self.value))
+        
+        if self.charge_type == 'percentage':
+            return (subtotal * value) / Decimal('100')
+        return value

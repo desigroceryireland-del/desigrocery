@@ -250,6 +250,7 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
   signup: (name: string, email: string, password: string) => Promise<boolean>;
+  googleLogin: (credential: string) => Promise<boolean>; // ✅ Added this
   logout: () => void;
   addAddress: (address: Omit<Address, "id">) => void;
   removeAddress: (id: string) => void;
@@ -263,6 +264,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user: null,
     isAuthenticated: false,
   });
+
+  const googleLogin = async (credential: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/google/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: credential }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) return false;
+
+      // Save Tokens
+      localStorage.setItem("access", data.access);
+      localStorage.setItem("refresh", data.refresh);
+      localStorage.setItem("userEmail", data.user.email);
+
+      // ✅ Update State Immediately so profile opens without refresh
+      setAuthState({
+        user: {
+          id: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          addresses: [],
+          orders: [],
+        },
+        isAuthenticated: true,
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Google login error:", error);
+      return false;
+    }
+  };
 
   // 🔄 Restore login on page refresh
   useEffect(() => {
@@ -433,6 +469,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         ...authState,
         login,
         signup,
+        googleLogin,
         logout,
         addAddress,
         removeAddress,

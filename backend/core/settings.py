@@ -167,3 +167,4 @@ STRIPE_SECRET_KEY = "sk_test"
 STRIPE_WEBHOOK_SECRET = "whsec_..."  # Get this from Stripe Dashboard > Webhooks
 
 FRONTEND_URL = "http://localhost:8080"  # Where to redirect after payment
+GOOGLE_CLIENT_ID = ""

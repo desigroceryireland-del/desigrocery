@@ -9,6 +9,7 @@ export interface Product {
   original_price?: number;
   image: string;
   unit: string;
+  stock_count: number;
 
   in_stock: boolean;
   in_offer: boolean;

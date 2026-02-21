@@ -128,29 +128,34 @@ export const FilterSidebar = ({
 
         {/* Price */}
         <div className="border-b pb-4">
-          <button 
-            onClick={() => toggleSection("price")} 
-            className="flex justify-between w-full mb-3 font-medium"
-          >
-            Price Range {expandedSections.price ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </button>
-          {expandedSections.price && (
-            <div className="px-2 pt-2 pb-4">
-              <Slider
-                value={priceRange}
-                onValueChange={(v) => onPriceChange(v as [number, number])}
-                min={0}
-                max={100}
-                step={1}
-                className="mb-4"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>€{priceRange[0]}</span>
-                <span>€{priceRange[1]}</span>
-              </div>
-            </div>
-          )}
-        </div>
+  <button 
+    onClick={() => toggleSection("price")} 
+    className="flex justify-between w-full mb-3 font-medium items-center"
+  >
+    <span>Price Range</span>
+    {expandedSections.price ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+  </button>
+  
+  {expandedSections.price && (
+    <div className="px-2 pt-2 pb-4">
+      <Slider
+        /* FIX 1: Ensure priceRange is an array like [0, 50] 
+          FIX 2: max MUST be 50 so the handle can reach the end of the visual bar
+        */
+        value={priceRange} 
+        onValueChange={(v) => onPriceChange(v)} 
+        min={0}
+        max={50} 
+        step={1}
+        className="mb-6 mt-2 cursor-pointer" 
+      />
+      <div className="flex justify-between text-sm font-medium text-gray-600">
+        <span>€{priceRange[0]}</span>
+        <span>€{priceRange[1]}</span>
+      </div>
+    </div>
+  )}
+</div>
 
         {/* Offers */}
         <div className="flex justify-between items-center border-b pb-4">
