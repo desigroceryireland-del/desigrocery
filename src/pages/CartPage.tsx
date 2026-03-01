@@ -1122,7 +1122,7 @@ import { api } from "@/lib/api";
 const getImageUrl = (path: string | undefined) => {
   if (!path) return "/placeholder.png";
   if (path.startsWith("http")) return path;
-  return `http://127.0.0.1:8000${path}`;
+  return `http://api.desigrocery.ie${path}`;
 };
 
 const CartPage = () => {

@@ -626,7 +626,7 @@ export const Navbar = () => {
 
   // 2. Fetch Initial Data
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/store/locations/")
+    fetch("http://api.desigrocery.ie/api/store/locations/")
       .then(res => res.json())
       .then(data => {
         setLocations(data);
@@ -636,12 +636,12 @@ export const Navbar = () => {
       })
       .catch(err => console.error("Failed to load locations", err));
 
-    fetch("http://127.0.0.1:8000/api/store/categories/")
+    fetch("http://api.desigrocery.ie/api/store/categories/")
       .then(res => res.json())
       .then(data => setCategories(data))
       .catch(err => console.error("Failed to load categories", err));
 
-    fetch("http://127.0.0.1:8000/api/announcements/")
+    fetch("http://api.desigrocery.ie/api/announcements/")
       .then(res => res.json())
       .then(data => setAnnouncements(data))
       .catch(err => console.error("Failed to load announcements", err));
@@ -663,7 +663,7 @@ export const Navbar = () => {
     }
 
     const delayDebounceFn = setTimeout(() => {
-      fetch(`http://127.0.0.1:8000/api/store/products/?search=${searchQuery}&location=${selectedLocation.id}`)
+      fetch(`http://api.desigrocery.ie/api/store/products/?search=${searchQuery}&location=${selectedLocation.id}`)
         .then(res => res.json())
         .then(data => setSearchResults(data.slice(0, 5)))
         .catch(err => console.error("Search failed", err));

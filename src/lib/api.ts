@@ -274,8 +274,8 @@
 //     })),
 // };
 
-const API_URL = "http://127.0.0.1:8000/api/store";
-const AUTH_URL = "http://127.0.0.1:8000/api/auth";
+const API_URL = "http://api.desigrocery.ie/api/store";
+const AUTH_URL = "http://api.desigrocery.ie/api/auth";
 
 // ✅ Helper to get headers safely
 export const getAuthHeaders = () => {

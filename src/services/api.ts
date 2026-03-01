@@ -1,4 +1,4 @@
-const API_BASE = "http://127.0.0.1:8000/api";
+const API_BASE = "http://api.desigrocery.ie/api";
 
 export const fetchCategories = async () => {
   const res = await fetch(`${API_BASE}/categories/`);

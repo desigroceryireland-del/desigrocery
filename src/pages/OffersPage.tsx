@@ -8,7 +8,7 @@ const OffersPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/store/products/")
+    fetch("http://api.desigrocery.ie/api/store/products/")
       .then(res => res.json())
       .then(data => {
         const offers = data.filter((p: Product) => p.in_offer);

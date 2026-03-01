@@ -1,4 +1,4 @@
-const PROMO_API = "http://127.0.0.1:8000/api/promocodes";
+const PROMO_API = "http://api.desigrocery.ie/api/promocodes";
 
 export const applyPromoCode = async (code: string, cartTotal: number) => {
   const res = await fetch(`${PROMO_API}/apply/`, {

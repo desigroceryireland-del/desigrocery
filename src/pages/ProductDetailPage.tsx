@@ -481,7 +481,7 @@ const ProductDetailPage = () => {
 
   useEffect(() => {
     setLoading(true);
-    const detailUrl = `http://127.0.0.1:8000/api/store/products/${productId}/?${locationId ? `location=${locationId}` : ''}`;
+    const detailUrl = `http://api.desigrocery.ie/api/store/products/${productId}/?${locationId ? `location=${locationId}` : ''}`;
 
     fetch(detailUrl)
       .then(res => res.json())
@@ -489,7 +489,7 @@ const ProductDetailPage = () => {
         setProduct(data);
         setLoading(false);
 
-        const relatedUrl = `http://127.0.0.1:8000/api/store/products/?category=${data.category}${locationId ? `&location=${locationId}` : ''}`;
+        const relatedUrl = `http://api.desigrocery.ie/api/store/products/?category=${data.category}${locationId ? `&location=${locationId}` : ''}`;
         fetch(relatedUrl)
           .then(res => res.json())
           .then(rel => setRelatedProducts(rel.filter((p: Product) => p.slug !== data.slug).slice(0, 4)));

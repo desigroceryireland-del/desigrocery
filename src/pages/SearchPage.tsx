@@ -21,7 +21,7 @@ const SearchPage = () => {
 
     setLoading(true);
 
-    fetch(`http://127.0.0.1:8000/api/store/products/?search=${query}`)
+    fetch(`http://api.desigrocery.ie/api/store/products/?search=${query}`)
       .then(res => res.json())
       .then(data => {
         setResults(data);
@@ -35,7 +35,7 @@ const SearchPage = () => {
 
   // Fetch recommended (offers)
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/store/products/")
+    fetch("http://api.desigrocery.ie/api/store/products/")
       .then(res => res.json())
       .then(data => setRecommended(data.filter((p: Product) => p.in_offer).slice(0, 4)))
       .catch(err => console.error("Error fetching recommended:", err));

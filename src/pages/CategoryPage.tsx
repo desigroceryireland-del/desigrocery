@@ -265,7 +265,7 @@ const CategoryPage = () => {
 
   // Fetch Categories
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/store/categories/")
+    fetch("http://api.desigrocery.ie/api/store/categories/")
       .then(res => res.json())
       .then(data => setCategories(data))
       .catch(err => console.error("Error fetching categories:", err));
@@ -275,7 +275,7 @@ const CategoryPage = () => {
   useEffect(() => {
     setLoading(true);
 
-    let url = "http://127.0.0.1:8000/api/store/products/?";
+    let url = "http://api.desigrocery.ie/api/store/products/?";
     if (activeCategory) url += `category=${activeCategory}&`;
     if (selectedSubcategories.length === 1) url += `subcategory=${selectedSubcategories[0]}&`;
     
