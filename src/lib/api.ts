@@ -274,8 +274,8 @@
 //     })),
 // };
 
-const API_URL = "http://api.desigrocery.ie/api/store";
-const AUTH_URL = "http://api.desigrocery.ie/api/auth";
+const API_URL = "https://api.desigrocery.ie/api/store";
+const AUTH_URL = "https://api.desigrocery.ie/api/auth";
 
 // ✅ Helper to get headers safely
 export const getAuthHeaders = () => {

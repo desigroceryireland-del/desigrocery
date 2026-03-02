@@ -205,10 +205,10 @@ const Index = () => {
     setLoading(true);
     
     // ✅ 2. Append locationId to the products request if it exists
-    const productUrl = `http://api.desigrocery.ie/api/store/products/${locationId ? `?location=${locationId}` : ''}`;
+    const productUrl = `https://api.desigrocery.ie/api/store/products/${locationId ? `?location=${locationId}` : ''}`;
 
     Promise.all([
-      fetch("http://api.desigrocery.ie/api/store/categories/").then(res => res.json()),
+      fetch("https://api.desigrocery.ie/api/store/categories/").then(res => res.json()),
       fetch(productUrl).then(res => res.json())
     ])
       .then(([catData, prodData]) => {

@@ -1,4 +1,4 @@
-const PROMO_API = "http://api.desigrocery.ie/api/promocodes";
+const PROMO_API = "https://api.desigrocery.ie/api/promocodes";
 
 export const applyPromoCode = async (code: string, cartTotal: number) => {
   const res = await fetch(`${PROMO_API}/apply/`, {
