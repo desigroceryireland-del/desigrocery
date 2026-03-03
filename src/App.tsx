@@ -154,7 +154,7 @@ import OrderSuccessPage from "./pages/OrderSuccess";
 const queryClient = new QueryClient();
 
 // ✅ Replace with your actual Client ID
-const GOOGLE_CLIENT_ID = VITE_GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
