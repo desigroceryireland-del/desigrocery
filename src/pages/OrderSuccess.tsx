@@ -216,8 +216,12 @@ const OrderSuccessPage = () => {
 
         // Use URL order ID initially if available
         if (urlOrderId) {
-          setOrder({ id: urlOrderId, status: "Processing" });
-        }
+  setOrder({
+    id: urlOrderId,
+    order_number: urlOrderId, // 👈 ADD THIS
+    status: "Processing"
+  });
+}
 
         // Poll for order details (retry 3 times)
         let foundOrder = null;
@@ -297,8 +301,7 @@ const OrderSuccessPage = () => {
             Order Confirmed!
           </h1>
           <p className="text-xl text-muted-foreground mb-8">
-            Thank you for your purchase. Your order #{order?.id} has been placed
-            successfully.
+            Your order #{order?.order_number || order?.id} has been placed successfully.
           </p>
 
           <div className="bg-card border rounded-xl p-8 mb-8 shadow-sm text-left">
