@@ -306,7 +306,9 @@ const OrderSuccessPage = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Order Number</p>
                 {/* ✅ Display Order ID */}
-                <p className="font-bold text-lg">#{order?.id}</p>
+                <p className="font-bold text-lg">
+  #{order?.order_number}
+</p>
               </div>
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Status</p>
