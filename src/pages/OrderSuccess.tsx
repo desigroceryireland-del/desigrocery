@@ -362,7 +362,7 @@
 
 // export default OrderSuccessPage;
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
@@ -389,21 +389,30 @@ const OrderSuccessPage = () => {
   const [order, setOrder] = useState<any>(null);
   const [error, setError] = useState(false);
 
+  // ✅ 1. Add a ref to prevent the infinite loop
+  const hasFetched = useRef(false);
+
   useEffect(() => {
+    // ✅ 2. Exit early if we've already run this effect
+    if (hasFetched.current) return;
+
     if (!sessionId && !urlOrderId) {
       navigate("/");
       return;
     }
 
     const verifyOrder = async () => {
+      // ✅ 3. Immediately mark as fetched so it never re-runs
+      hasFetched.current = true;
+      
       try {
         await clearCart();
 
-        // Use URL order ID initially if available
+        // Use URL order ID initially if available so the UI doesn't look blank
         if (urlOrderId) {
           setOrder({
             id: urlOrderId,
-            order_number: urlOrderId, // Temporary fallback
+            order_number: urlOrderId, 
             status: "Processing"
           });
         }
@@ -413,8 +422,6 @@ const OrderSuccessPage = () => {
         for (let i = 0; i < 3; i++) {
           const orders = await api.getOrders();
           
-          // ✅ FIX: Find order by matching ID or Order Number, not just stripe_session_id
-          // because stripe_session_id might not be returned in your getOrders API response.
           foundOrder = orders.find(
             (o: any) => 
               String(o.id) === String(urlOrderId) || 
@@ -427,7 +434,7 @@ const OrderSuccessPage = () => {
         }
 
         if (foundOrder) {
-          setOrder(foundOrder); // This will inject the REAL order_number from your backend
+          setOrder(foundOrder); // This injects the real order_number (DG-2026-...)
         } else if (!urlOrderId) {
           setOrder({ status: "processing", id: "Creating..." });
         }
@@ -490,7 +497,6 @@ const OrderSuccessPage = () => {
             Order Confirmed!
           </h1>
           <p className="text-xl text-muted-foreground mb-8">
-            {/* ✅ Added order?.id fallback so it never breaks */}
             Your order #{order?.order_number || order?.id} has been placed successfully.
           </p>
 
@@ -498,7 +504,6 @@ const OrderSuccessPage = () => {
             <div className="flex justify-between items-center mb-6 border-b pb-4">
               <div>
                 <p className="text-sm text-muted-foreground">Order Number</p>
-                {/* ✅ Added order?.id fallback here as well */}
                 <p className="font-bold text-lg">
                   #{order?.order_number || order?.id}
                 </p>
