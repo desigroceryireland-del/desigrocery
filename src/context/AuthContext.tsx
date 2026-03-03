@@ -213,7 +213,7 @@ import React, {
   ReactNode,
 } from "react";
 
-const API_BASE = "api.desigrocery.ie/api";
+const API_BASE = "https://api.desigrocery.ie/api";
 
 interface Address {
   id: string;
